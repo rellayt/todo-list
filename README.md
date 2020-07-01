@@ -1,3 +1,3 @@
 # TODO LIST (alpha)
 
-<h2>[Live Version](https://rellayt.github.io/todo-list/)</h2>
+<h2><a href=https://rellayt.github.io/todo-list>Live Version</a></h2>
