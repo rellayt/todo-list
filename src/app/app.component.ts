@@ -1,6 +1,6 @@
-import { Component, OnInit, enableProdMode } from '@angular/core';
-import { TmplAstElement } from '@angular/compiler';
+import { Component, OnInit, enableProdMode, OnChanges, AfterViewChecked } from '@angular/core';
 
+enableProdMode();
 
 @Component({
   selector: 'app-todo',
@@ -12,11 +12,9 @@ export class AppComponent implements OnInit {
   taskName = '';
   task: Task;
 
-  task1: Task = new Task('test');
-
-  taskList: Task[] = [];
-  activeTaskList: Task[] = [];
-  inactiveTaskList: Task[] = [];
+  public taskList: Task[] = [];
+  public activeTaskList: Task[] = [];
+  public inactiveTaskList: Task[] = [];
 
   localTaskList: string;
 
@@ -25,65 +23,72 @@ export class AppComponent implements OnInit {
   uncompleted: boolean;
   firstClicked = false;
 
-  load = true;
+  getLocalStorageString = localStorage.getItem('1');
+
   save = false;
-  init = true;
 
   ngOnInit() {
-    if(this.init)
-    {
-      enableProdMode();
-      this.taskList.push(this.task1);
-      this.init = false;
-    }
-    if(this.load)
-    {
+    if (this.getLocalStorageString !== null) {
       this.taskList = JSON.parse(localStorage.getItem('1'));
-      this.load = false;
     }
-    if(this.save)
-    {
+  }
+
+  public saveStorage() {
+    if (this.save) {
       this.localTaskList = JSON.stringify(this.taskList);
       localStorage.setItem('1', this.localTaskList);
     }
   }
-
-
-  addTaskToArray() {
-    if (!this.firstClicked) {
-      this.firstClicked = true;
-      this.all = true;
+  detectBlankText(): boolean {
+    if (this.taskName.length >= 1 && this.taskName.charAt(0) === ' ' || this.taskName.length >= 1 && this.taskName.charAt(1) === ' ') {
+      console.log('Whitespace at beginning detected');
+      return true;
     }
-    if (this.taskName !== '') {
+  }
+  detectSameName(): boolean {
+    let name = false;
+    this.taskList.forEach((task, it) => {
+      if (this.taskName === this.taskList[it].name)
+      {
+        return name = true;
+      }
+    });
+    if (name){
+      return true;
+    }
+    else{
+      return false;
+    }
+
+  }
+  public addTaskToArray() {
+    if (this.taskName !== '' && !this.detectBlankText() && !this.detectSameName()) {
       this.task = new Task(this.taskName);
       this.taskList.push(this.task);
-      this.activeTaskList.push(this.task);
       this.taskName = '';
-      this.tasksRebuild();
     }
+    this.tasksRebuild();
+    this.saveStorage();
     this.save = true;
-    this.ngOnInit();
   }
   changeTaskActivity(index: number) {
     if (this.all) {
       if (this.taskList[index].done === true) {
         this.taskList[index].done = false;
-        let name = this.taskList[index].name;
-        this.inactiveTaskList.forEach((task, index) => {
-          if (task.name == name) {
-            console.log('Usuwana wartość: ' + this.inactiveTaskList[index].name);
-            this.inactiveTaskList.splice(index, 1);
+        const name = this.taskList[index].name;
+        this.inactiveTaskList.forEach((task, it) => {
+          if (task.name === name) {
+            this.inactiveTaskList.splice(it, 1);
           }
         });
       }
       else if (this.taskList[index].done === false) {
         this.taskList[index].done = true;
         this.inactiveTaskList.push(this.taskList[index]);
-        let name = this.taskList[index].name;
-        console.log(this.taskList[index].name + ' jest nieaktywny');
-        this.activeTaskList.forEach((task, index) => {
+        const name = this.taskList[index].name;
+        this.activeTaskList.forEach((task, it) => {
           if (task.name === name) {
-            this.activeTaskList.splice(index, 1);
+            this.activeTaskList.splice(it, 1);
           }
         });
       }
@@ -91,11 +96,11 @@ export class AppComponent implements OnInit {
     else if (this.completed) {
       if (this.inactiveTaskList[index].done === true) {
         let stop = false;
-        let name = this.inactiveTaskList[index].name;
-        this.taskList.forEach((task, index) => {
+        const name = this.inactiveTaskList[index].name;
+        this.taskList.forEach((task, it) => {
           if (!stop) {
             if (task.name === name) {
-              this.taskList[index].done = false;
+              this.taskList[it].done = false;
               stop = true;
             }
           }
@@ -105,10 +110,10 @@ export class AppComponent implements OnInit {
     }
     else if (this.uncompleted) {
       if (this.activeTaskList[index].done === false) {
-        let name = this.activeTaskList[index].name;
-        this.taskList.forEach((task, index) => {
+        const name = this.activeTaskList[index].name;
+        this.taskList.forEach((task, it) => {
           if (task.name === name) {
-            this.taskList[index].done = true;
+            this.taskList[it].done = true;
           }
         });
       }
@@ -116,7 +121,7 @@ export class AppComponent implements OnInit {
     this.tasksRebuild();
   }
   activeDeleteTask(index: number, tName: string, deleted: boolean) {
-    if (this.taskList[index].deleted != deleted) {
+    if (this.taskList[index].deleted !== deleted) {
       this.taskList[index].deleted = deleted;
     }
     this.tasksRebuild();
@@ -124,28 +129,26 @@ export class AppComponent implements OnInit {
   deleteTask(index: number) {
     if (this.taskList[index].deleted) {
       this.taskList.splice(index, 1);
+      this.tasksRebuild();
     }
-    this.tasksRebuild();
   }
   changeList(value) {
-    if (value == 'all') {
+    if (value === 'all') {
       this.all = true;
       this.completed = false;
       this.uncompleted = false;
-      this.tasksRebuild();
     }
-    if (value == 'completed') {
+    if (value === 'completed') {
       this.all = false;
       this.completed = true;
       this.uncompleted = false;
-      this.tasksRebuild();
     }
-    if (value == 'uncompleted') {
+    if (value === 'uncompleted') {
       this.all = false;
       this.completed = false;
       this.uncompleted = true;
-      this.tasksRebuild();
     }
+    this.tasksRebuild();
   }
   tasksRebuild() {
     this.activeTaskList = [];
@@ -158,8 +161,8 @@ export class AppComponent implements OnInit {
         this.inactiveTaskList.push(task);
       }
     });
+    this.saveStorage();
     this.save = true;
-    this.ngOnInit();
   }
 }
 
@@ -167,4 +170,3 @@ class Task {
   constructor(public name: string, public done = false, public deleted = false) {
   }
 }
-
